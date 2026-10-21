@@ -4,6 +4,7 @@ const nodeCrypto = require('crypto').webcrypto;
 const fullCrypto = require('crypto')
 const nodeUtil = require('util');
 const { Buffer } = require('node:buffer');
+const { Readable } = require('node:stream')
 
 // Save event listener functions. Event listener callbacks may change
 // the state of the DOM and exhibit different functionality when
@@ -2194,12 +2195,35 @@ var process = {
     env: {
     },
 }
+
+function dummyReadable() {
+    const r = new Readable();
+    r.push("");
+    r.push(null);
+    return r;
+}
+
+function dummyWritable(name) {
+    const w = {
+        end: function (chunk) {
+            console.log(`writable ${name} end chunk=${chunk}`);
+            return w;
+        },
+        write: function (chunk) {
+            console.log(`writable ${name} write chunk=${chunk}`);
+            return w;
+        },
+    }
+    return w;
+}
     
 // Stubbed Node spawn() function.
 function _spawn(file, args) {
     logIOC('process spawn()', {file: file, args: args}, "The script spawned a process with spawn().");
     return {
-	unref: function () {},
+        unref: function () {},
+        stdout: dummyReadable(),
+        stdin: dummyWritable(`subprocess ${file} ${args}`),
     };
 }
 
@@ -2571,7 +2595,7 @@ var AbortSignal = {
 module = {};
 
 // Global global dict?
-global = {};
+global = globalThis;
 
 // Stubbed JS express module methods.
 // https://expressjs.com/en/5x/api.html
